@@ -9,11 +9,13 @@ def load_tasks() -> list[dict]:
     if DATA_FILE.exists():
         try:
             data = json.loads(DATA_FILE.read_text(encoding="utf-8"))
-            if isinstance(data, list):
-                return data
         except json.JSONDecodeError:
             print(f"Error: {DATA_FILE} is not valid JSON.", file=sys.stderr)
             sys.exit(1)
+        if not isinstance(data, list):
+            print(f"Error: {DATA_FILE} has unexpected format.", file=sys.stderr)
+            sys.exit(1)
+        return data
     return []
 
 
