@@ -7,7 +7,13 @@ DATA_FILE = Path(__file__).parent / "todo.json"
 
 def load_tasks() -> list[dict]:
     if DATA_FILE.exists():
-        return json.loads(DATA_FILE.read_text(encoding="utf-8"))
+        try:
+            data = json.loads(DATA_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, list):
+                return data
+        except json.JSONDecodeError:
+            print(f"Error: {DATA_FILE} is not valid JSON.", file=sys.stderr)
+            sys.exit(1)
     return []
 
 
@@ -17,7 +23,8 @@ def save_tasks(tasks: list[dict]) -> None:
 
 def cmd_add(title: str) -> None:
     tasks = load_tasks()
-    task = {"id": len(tasks) + 1, "title": title, "done": False}
+    new_id = max((t["id"] for t in tasks), default=0) + 1
+    task = {"id": new_id, "title": title, "done": False}
     tasks.append(task)
     save_tasks(tasks)
     print(f"Added: [{task['id']}] {title}")
@@ -42,6 +49,7 @@ def cmd_done(task_id: int) -> None:
             print(f"Done: [{task_id}] {task['title']}")
             return
     print(f"Task {task_id} not found.")
+    sys.exit(1)
 
 
 def main() -> None:
