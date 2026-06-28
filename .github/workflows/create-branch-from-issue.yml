@@ -1,0 +1,46 @@
+name: Create Branch from Issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create branch from issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.issue.number;
+            const issueTitle = context.payload.issue.title;
+            
+            // ブランチ名を生成（例: feature/#1-todo-cli）
+            const branchName = `feature/#${issueNumber}-${issueTitle
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, '-')
+              .replace(/-+/g, '-')
+              .slice(0, 50)}`;
+            
+            // mainブランチのSHAを取得
+            const main = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: 'main'
+            });
+            
+            // ブランチ作成
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/heads/${branchName}`,
+              sha: main.data.commit.sha
+            });
+            
+            // Issueにコメント
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `ブランチを作成しました: \`${branchName}\``
+            });
